@@ -1,0 +1,13 @@
+{
+  "name": "onedev-kommo-claude",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kommo для Claude: дополнение к коннектору One Development — только чтение, вход своим логином Kommo",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "node test/kommo-e2e.mjs && node test/install-e2e.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0"
+  }
+}

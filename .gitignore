@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.DS_Store
+# ключи никогда не попадают в репозиторий
+kommo-integration.json
+*key*.txt
+*.env

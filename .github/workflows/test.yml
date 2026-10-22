@@ -1,0 +1,29 @@
+name: Проверка на Windows и Mac
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} · Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-2025, node: 24 }
+          - { os: windows-2022, node: 20 }
+          - { os: macos-latest, node: 24 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - name: Kommo — 62 проверки коннектора
+        run: node test/kommo-e2e.mjs
+      - name: Установка как у сотрудника (настоящие папки одноразовой машины)
+        run: node test/install-e2e.mjs
+        env:
+          ONEDEV_E2E_REAL: '1'
