@@ -68,7 +68,9 @@ function storeSecret(name, account, value) {
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${name}.dat`);
     const ps = `$p = [Console]::In.ReadToEnd(); ConvertTo-SecureString $p -AsPlainText -Force | ConvertFrom-SecureString | Set-Content -LiteralPath '${file.replace(/'/g, "''")}'`;
-    execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps], { input: value, windowsHide: true });
+    // Без PSModulePath: иначе Windows PowerShell, запущенный из PowerShell 7, не находит ConvertTo-SecureString.
+    const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => k.toUpperCase() !== 'PSMODULEPATH'));
+    execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps], { input: value, windowsHide: true, env });
     return `dpapi:${file}`;
   }
   fail('Поддерживаются только macOS и Windows.');

@@ -83670,6 +83670,7 @@ var import_node_fs4 = __toESM(require("node:fs"), 1);
 var import_node_os4 = __toESM(require("node:os"), 1);
 var import_node_path4 = __toESM(require("node:path"), 1);
 var PS_READ = (file) => `$s = Get-Content -LiteralPath '${file.replace(/'/g, "''")}' | ConvertTo-SecureString; [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))`;
+var psEnv = () => Object.fromEntries(Object.entries(process.env).filter(([k]) => k.toUpperCase() !== "PSMODULEPATH"));
 function readSecret(ref) {
   if (typeof ref !== "string") return ref;
   if (ref.startsWith("keychain:")) {
@@ -83678,7 +83679,7 @@ function readSecret(ref) {
   }
   if (ref.startsWith("dpapi:")) {
     const file = ref.slice("dpapi:".length);
-    return (0, import_node_child_process.execFileSync)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", PS_READ(file)], { encoding: "utf8", timeout: 2e4, windowsHide: true }).replace(/\r?\n$/, "");
+    return (0, import_node_child_process.execFileSync)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", PS_READ(file)], { encoding: "utf8", timeout: 2e4, windowsHide: true, env: psEnv() }).replace(/\r?\n$/, "");
   }
   return ref;
 }
@@ -83740,7 +83741,7 @@ function saveSecret(name3, value) {
     return;
   }
   const ps = `$p = [Console]::In.ReadToEnd(); ConvertTo-SecureString $p -AsPlainText -Force | ConvertFrom-SecureString | Set-Content -LiteralPath '${file.replace(/'/g, "''")}'`;
-  (0, import_node_child_process.execFileSync)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { input: value, windowsHide: true });
+  (0, import_node_child_process.execFileSync)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { input: value, windowsHide: true, env: psEnv() });
 }
 function loadSecret(name3) {
   const st = storeKind();
