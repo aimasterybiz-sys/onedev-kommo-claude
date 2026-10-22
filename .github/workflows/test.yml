@@ -12,9 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-2025, node: 24 }
-          - { os: windows-2022, node: 20 }
-          - { os: macos-latest, node: 24 }
+          - { os: windows-2025, node: 24, no_node: '1' }
+          - { os: windows-2022, node: 20, no_node: '' }
+          - { os: macos-latest, node: 24, no_node: '' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,3 +27,4 @@ jobs:
         run: node test/install-e2e.mjs
         env:
           ONEDEV_E2E_REAL: '1'
+          ONEDEV_E2E_NO_NODE: ${{ matrix.no_node }}

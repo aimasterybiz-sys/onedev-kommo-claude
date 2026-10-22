@@ -47,6 +47,12 @@ const fake = http.createServer((req, res) => {
       return send(res, 400, { hint: 'bad grant' });
     }
     if (req.method === 'GET' && p === '/oauth') return send(res, 200, { page: 'login' });
+    // страница входа с секретом на сервере: коннектор присылает только код, без client_id и секрета
+    if (req.method === 'POST' && p === '/proxy/token') {
+      if (data.client_secret || data.client_id) return send(res, 400, { hint: 'секрет не должен приходить с компьютера' });
+      if (data.grant_type === 'authorization_code' && data.code === 'CODE-P') { tokens['oauth-P'] = ME; return send(res, 200, { access_token: 'oauth-P', refresh_token: 'rP', expires_in: 86400 }); }
+      return send(res, 400, { hint: 'bad grant' });
+    }
     const who = tokens[(req.headers.authorization || '').replace('Bearer ', '')];
     if (!who) return send(res, 401, { title: 'Unauthorized' });
     if (req.method === 'GET' && p === '/api/v4/account') return send(res, 200, { name: 'Fake Kommo', current_user_id: who });
@@ -333,6 +339,20 @@ let taskJ, leadJ;
   const byCode = await c.call('kommo_login', { code: 'CODE2' });
   ok(!byCode.error && byCode.json.logged_in === true && byCode.json.me.id === ME, 'запасной путь: вход по коду, вставленному в чат');
   await c.client.close();
+}
+
+// ---- коннектор «только Kommo»: без почты, без секрета на компьютере ---------------------------------
+{
+  console.log('Kommo only, secret on the login page');
+  const store = path.join(tmp, 'tokens-only.json');
+  const env = { KOMMO_TOKEN: undefined, ONEDEV_MAIL: 'off', KOMMO_CLIENT_ID: 'cid', KOMMO_CLIENT_SECRET: undefined, KOMMO_TOKEN_PROXY: `${BASE}/proxy/token`, KOMMO_REDIRECT_URI: 'https://relay.example/kommo', KOMMO_AUTH_URL: `${BASE}/oauth`, ONEDEV_NO_BROWSER: '1', ONEDEV_TOKEN_STORE: `file:${store}` };
+  const { client, call, names } = await connect('read', undefined, env);
+  ok(!names.some(n => n.startsWith('mail_')) && names.includes('kommo_leads') && names.includes('kommo_login'), 'только Kommo: инструментов почты нет, Kommo есть');
+  ok((await call('kommo_status')).json.logged_in === false, 'без секрета на компьютере Kommo всё равно подключён и ждёт входа');
+  const lg = await call('kommo_login', { code: 'CODE-P' });
+  const sent = requests.filter(r => r.path === '/proxy/token').pop();
+  ok(!lg.error && lg.json.logged_in && lg.json.me.id === ME && sent && !('client_secret' in sent.data), 'вход через страницу входа: Kommo принял, секрет с компьютера не уходил');
+  await client.close();
 }
 
 // ---- bad token --------------------------------------------------------------------------------------
